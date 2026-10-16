@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <title>Inscricao | Arame RUN</title>
+  <link rel="stylesheet" href="./css/styles.css">
+  <script src="./config.js"></script>
+  <script type="module" src="./js/registration-page.js"></script>
+</head>
+<body>
+  <main class="page">
+    <header class="brand-header">
+      <div>
+      <p class="eyebrow">CORRIDA DE RUA</p>
+      <h1>Arame RUN</h1>
+      <p>Escolha a edicao e preencha seus dados para se inscrever.</p>
+      </div>
+    </header>
+    <section class="card" aria-labelledby="signup-title">
+      <h2 id="signup-title">Inscricao</h2>
+      <form id="registration-form">
+        <label>Edicao
+          <select name="editionId" id="edition" required><option value="">Carregando edicoes...</option></select>
+        </label>
+        <label>Nome completo
+          <input name="fullName" autocomplete="name" maxlength="160" required>
+        </label>
+        <label>Telefone com codigo do pais
+          <input name="phone" type="tel" autocomplete="tel" placeholder="+5511999999999" pattern="\+[1-9][0-9]{7,14}" required>
+        </label>
+        <label>Data de nascimento
+          <input name="birthDate" type="date" autocomplete="bday" required>
+        </label>
+        <label>Sexo para regra da categoria
+          <select name="gender" required>
+            <option value="">Selecione</option>
+            <option value="female">Feminino</option>
+            <option value="male">Masculino</option>
+          </select>
+        </label>
+        <label>Categoria
+          <select name="categoryId" id="category" required disabled><option value="">Selecione uma edicao</option></select>
+        </label>
+        <label id="shirt-field" hidden>Tamanho da camisa
+          <select name="shirtSize" id="shirt-size" required><option value="">Selecione a categoria primeiro</option></select>
+        </label>
+        <button type="submit">Concluir inscricao</button>
+        <p id="form-message" class="message" role="status" aria-live="polite"></p>
+      </form>
+    </section>
+    <footer><a href="./admin.html">Acesso administrativo</a></footer>
+  </main>
+</body>
+</html>

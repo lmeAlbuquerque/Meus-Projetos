@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <meta name="robots" content="noindex,nofollow">
+  <title>Consulta da inscricao | Arame RUN</title>
+  <link rel="stylesheet" href="./css/styles.css">
+  <script src="./config.js"></script>
+  <script type="module" src="./js/status-page.js"></script>
+</head>
+<body>
+  <main class="page">
+    <header class="brand-header">
+      <div><p class="eyebrow">CONSULTA PRIVADA</p><h1>Sua inscricao</h1></div>
+    </header>
+    <section class="card">
+      <p id="status-message" class="message" role="status" aria-live="polite">Consultando inscricao...</p>
+      <div id="registration-details" hidden>
+        <dl id="details-list"></dl>
+        <p id="payment-note"></p>
+        <a id="announcements" hidden rel="noopener noreferrer" target="_blank">Acompanhar avisos</a>
+        <p id="pix-instructions"></p>
+        <a id="whatsapp" class="button-link" hidden rel="noopener noreferrer" target="_blank">Abrir WhatsApp para enviar comprovante</a>
+        <p class="muted">O WhatsApp sera aberto para voce anexar e enviar o comprovante. O sistema nao recebe nem confirma o envio.</p>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

@@ -1,0 +1,12 @@
+{
+  "name": "arame-run",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Inscricoes e administracao da corrida Arame RUN",
+  "type": "module",
+  "scripts": {
+    "dev": "node scripts/serve.mjs",
+    "test": "node --test",
+    "test:integration": "node --env-file-if-exists=.env --test tests/integration/*.test.mjs"
+  }
+}

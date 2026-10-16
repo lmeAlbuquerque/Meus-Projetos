@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <meta name="robots" content="noindex,nofollow">
+  <title>Administracao | Arame RUN</title>
+  <link rel="stylesheet" href="./css/styles.css">
+  <script src="./config.js"></script>
+  <script type="module" src="./js/admin-page.js"></script>
+</head>
+<body class="admin-shell">
+  <main class="page wide">
+    <header class="brand-header">
+      <div>
+        <p class="eyebrow">CENTRAL DA ORGANIZACAO</p>
+        <h1>Administracao</h1>
+      </div>
+    </header>
+    <section class="card login-card" id="login-card">
+      <h2>Acessar painel</h2>
+      <p class="muted">Entre com a conta administrativa criada ou convidada pela organizacao.</p>
+      <form id="login-form">
+        <label>E-mail<input name="email" type="email" autocomplete="username" required></label>
+        <label>Senha<input name="password" type="password" autocomplete="current-password" required></label>
+        <button type="submit">Entrar</button>
+      </form>
+      <p id="login-message" class="message" role="status" aria-live="polite"></p>
+    </section>
+    <section id="admin-panel" hidden>
+      <div class="workspace-bar">
+        <p id="admin-role" class="role-badge"></p>
+        <button id="logout-button" class="secondary" type="button">Sair</button>
+      </div>
+      <p id="management-message" class="message global-message" role="status" aria-live="polite"></p>
+      <nav class="module-nav" id="module-nav" aria-label="Modulos administrativos" hidden>
+        <button type="button" data-view="registrations" class="active">Inscricoes</button>
+        <button type="button" data-view="editions">Edicoes</button>
+        <button type="button" data-view="categories">Categorias</button>
+        <button type="button" data-view="settings">Comunicacao</button>
+        <button type="button" data-view="admins">Administradores</button>
+        <button type="button" data-view="appearance">Aparencia</button>
+      </nav>
+      <section class="admin-view card" data-view-panel="registrations">
+        <div class="section-heading">
+          <div><p class="eyebrow">PARTICIPANTES</p><h2>Inscricoes</h2></div>
+          <button id="export-csv" type="button" class="secondary" hidden>Exportar CSV</button>
+        </div>
+        <section class="summary-block" aria-label="Resumo da edicao">
+          <h3>Resumo da edicao</h3>
+          <p id="report-summary" class="muted">Selecione uma edicao para ver os totais.</p>
+        </section>
+        <form id="filters" class="filters">
+          <label>Edicao<select name="editionId" id="edition-filter"><option value="">Selecione</option></select></label>
+          <label>Palavras-chave<input name="search" type="search" placeholder="Nome, numero ou categoria"></label>
+          <label>Pagamento<select name="payment"><option value="">Todos</option><option value="pending">Pendente</option><option value="confirmed">Confirmado</option><option value="refunded">Estornado</option></select></label>
+          <label>Status<select name="status"><option value="">Todos</option><option value="active">Ativa</option><option value="cancelled">Cancelada</option></select></label>
+        </form>
+        <p id="admin-message" class="message" role="status"></p>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th><button type="button" class="sort-header" data-sort="registration_number">Numero</button></th>
+                <th><button type="button" class="sort-header" data-sort="full_name">Participante</button></th>
+                <th><button type="button" class="sort-header" data-sort="category_name">Categoria</button></th>
+                <th>Valor</th><th><button type="button" class="sort-header" data-sort="payment_status">Pagamento</button></th>
+                <th>Confirmado em</th><th><button type="button" class="sort-header" data-sort="status">Status</button></th>
+                <th><button type="button" class="sort-header" data-sort="created_at">Inscricao</button></th>
+                <th>Link privado</th><th>Acao</th>
+              </tr>
+            </thead>
+            <tbody id="registrations"></tbody>
+          </table>
+        </div>
+        <div class="toolbar pager">
+          <button id="previous-page" class="secondary">Anterior</button>
+          <span id="page-label">Pagina 1</span>
+          <button id="next-page" class="secondary">Proxima</button>
+        </div>
+      </section>
+      <section class="admin-view card" data-view-panel="editions" hidden>
+        <div class="section-heading"><div><p class="eyebrow">TEMPORADAS</p><h2>Edicoes</h2></div></div>
+        <form id="edition-form" class="form-grid">
+          <label>Edicao para editar<select id="managed-edition"><option value="">Nova edicao</option></select></label>
+          <label>Ano<input name="year" type="number" min="2000" max="2200" required></label>
+          <label>Nome<input name="name" maxlength="120" required></label>
+          <label>Status<select name="status"><option value="draft">Rascunho</option><option value="open">Inscricoes abertas</option><option value="closed">Inscricoes encerradas</option><option value="archived">Arquivada</option></select></label>
+          <button type="submit" id="save-edition">Criar edicao</button>
+        </form>
+        <form id="payment-instructions-form" class="inline-form">
+          <label>Instrucoes de pagamento Pix
+            <textarea name="pixInstructions" rows="4" maxlength="2000" placeholder="Chave Pix, titular e orientacoes para o participante"></textarea>
+          </label>
+          <button type="submit" class="secondary">Salvar instrucoes Pix</button>
+        </form>
+        <form id="clone-form" class="inline-form form-grid">
+          <h3 class="grid-span">Iniciar nova edicao copiando configuracoes</h3>
+          <label>Novo ano<input name="year" type="number" min="2000" max="2200" required></label>
+          <label>Nome<input name="name" maxlength="120" required></label>
+          <button type="submit" class="secondary">Duplicar sem participantes</button>
+        </form>
+      </section>
+      <section class="admin-view card" data-view-panel="categories" hidden>
+        <div class="section-heading"><div><p class="eyebrow">PROVAS E VAGAS</p><h2>Categorias da edicao</h2></div></div>
+        <p class="muted">As categorias e seus totais ficam na lista de inscricoes. Configure aqui as regras das categorias da edicao selecionada.</p>
+        <form id="category-form" class="form-grid">
+          <label>Categoria para editar<select name="categoryToEdit" id="category-editor-select"><option value="">Nova categoria</option></select></label>
+          <label>Nome<input name="name" maxlength="100" required></label>
+          <label>Distancia em km<input name="distance" type="number" min="0.01" step="0.01" required></label>
+          <label>Idade minima<input name="minAge" type="number" min="0" max="120"></label>
+          <label>Idade maxima<input name="maxAge" type="number" min="0" max="120"></label>
+          <label>Regra de sexo<select name="genderRule"><option value="any">Masculino ou feminino</option><option value="female">Feminino</option><option value="male">Masculino</option></select></label>
+          <label>Valor em reais<input name="price" type="number" min="0" step="0.01" required></label>
+          <label>Limite de vagas<input name="capacity" type="number" min="1"></label>
+          <label>Status<select name="active"><option value="true">Ativa</option><option value="false">Inativa</option></select></label>
+          <button type="submit" id="save-category">Adicionar categoria</button>
+        </form>
+        <form id="shirt-settings-form" class="inline-form form-grid">
+          <h3 class="grid-span">Opcao de camisa na inscricao</h3>
+          <label class="checkbox grid-span"><input name="distributeShirt" type="checkbox"> Esta edicao vai distribuir camisa</label>
+          <label class="grid-span">Tamanhos disponiveis
+            <select name="shirtOptions" multiple size="4" aria-label="Tamanhos de camisa disponiveis">
+              <option value="PP">PP</option><option value="P">P</option><option value="M">M</option>
+              <option value="G">G</option><option value="GG">GG</option><option value="XG">XG</option>
+            </select>
+          </label>
+          <button type="submit">Salvar opcoes de camisa</button>
+        </form>
+      </section>
+      <section class="admin-view card" data-view-panel="settings" hidden>
+        <div class="section-heading"><div><p class="eyebrow">INFORMACOES AO PARTICIPANTE</p><h2>Comunicacao</h2></div></div>
+        <form id="settings-form">
+          <label>Edicao<select id="settings-edition" name="edition"><option value="">Selecione uma edicao</option></select></label>
+          <label>Numero oficial do WhatsApp (com DDI, somente numeros)<input name="whatsappNumber" inputmode="numeric" pattern="[1-9][0-9]{7,14}" maxlength="15" placeholder="5511999999999"></label>
+          <a id="whatsapp-preview" class="button-link" href="#" target="_blank" rel="noopener noreferrer" hidden>Abrir WhatsApp desta edicao</a>
+          <button type="submit">Salvar WhatsApp da edicao</button>
+        </form>
+      </section>
+      <section class="admin-view card" data-view-panel="admins" hidden>
+        <div class="section-heading"><div><p class="eyebrow">ACESSOS</p><h2 id="admins-title">Administradores</h2></div></div>
+        <form id="invite-form" class="invite-form">
+          <label>E-mail da pessoa<input name="email" type="email" autocomplete="email" required></label>
+          <button type="submit">Enviar convite de acesso</button>
+        </form>
+        <p class="muted">O convite cria um acesso secundario. A pessoa define a propria senha pelo link enviado ao e-mail; nunca envie senhas por e-mail.</p>
+        <p id="admins-description" class="muted"></p>
+        <div class="table-wrap"><table><thead><tr><th>Conta</th><th>Papel</th><th>Vinculo principal</th><th>Ativa</th><th>Acao</th></tr></thead><tbody id="admins"></tbody></table></div>
+      </section>
+      <section class="admin-view card" data-view-panel="appearance" hidden>
+        <div class="section-heading"><div><p class="eyebrow">IDENTIDADE ARAME RUN</p><h2>Aparencia</h2></div></div>
+        <p class="muted">A cor escolhida e compartilhada com todos os visitantes. Somente DEV e a administradora principal podem altera-la.</p>
+        <form id="theme-form">
+          <label>Tema global<select name="theme"><option value="arame">Arame — vermelho e laranja</option><option value="ember">Brasa — vermelho intenso</option><option value="sunset">Entardecer — laranja e dourado</option></select></label>
+          <button type="submit">Aplicar tema para todos</button>
+        </form>
+      </section>
+      <div id="rotated-link" class="card" hidden>
+        <p>Link renovado. O anterior deixou de funcionar. Copie e compartilhe este link com o participante:</p>
+        <input id="new-status-link" readonly aria-label="Novo link privado de consulta">
+        <button type="button" id="copy-status-link" class="secondary">Copiar link</button>
+      </div>
+    </section>
+  </main>
+</body>
+</html>
