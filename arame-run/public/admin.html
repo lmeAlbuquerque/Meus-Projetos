@@ -29,24 +29,48 @@
       <p id="login-message" class="message" role="status" aria-live="polite"></p>
     </section>
     <section id="admin-panel" hidden>
-      <div class="workspace-bar">
-        <p id="admin-role" class="role-badge"></p>
-        <button id="logout-button" class="secondary" type="button">Sair</button>
-      </div>
-      <p id="management-message" class="message global-message" role="status" aria-live="polite"></p>
-      <nav class="module-nav" id="module-nav" aria-label="Modulos administrativos" hidden>
-        <button type="button" data-view="registrations" class="active">Inscricoes</button>
-        <button type="button" data-view="editions">Edicoes</button>
-        <button type="button" data-view="categories">Categorias</button>
-        <button type="button" data-view="settings">Comunicacao</button>
-        <button type="button" data-view="admins">Administradores</button>
-        <button type="button" data-view="appearance">Aparencia</button>
-      </nav>
+      <div class="admin-app">
+        <aside class="app-sidebar">
+          <a class="app-brand" href="#registrations" aria-label="Arame RUN, ir para inscricoes">
+            <img src="./assets/arame-run-logo.png" alt="">
+            <span><strong>ARAME RUN</strong><small>PAINEL DE GESTAO</small></span>
+          </a>
+          <nav class="module-nav" id="module-nav" aria-label="Modulos administrativos" hidden>
+            <p class="nav-label">MENU PRINCIPAL</p>
+            <button type="button" data-view="registrations" class="active"><span class="nav-symbol" aria-hidden="true">▦</span><span>Inscricoes</span></button>
+            <button type="button" data-view="editions"><span class="nav-symbol" aria-hidden="true">◷</span><span>Edicoes</span></button>
+            <button type="button" data-view="categories"><span class="nav-symbol" aria-hidden="true">◇</span><span>Categorias</span></button>
+            <p class="nav-label nav-label-secondary">ORGANIZACAO</p>
+            <button type="button" data-view="settings"><span class="nav-symbol" aria-hidden="true">↗</span><span>Comunicacao</span></button>
+            <button type="button" data-view="admins"><span class="nav-symbol" aria-hidden="true">♙</span><span>Administradores</span></button>
+            <button type="button" data-view="appearance"><span class="nav-symbol" aria-hidden="true">◐</span><span>Aparencia</span></button>
+          </nav>
+          <div class="sidebar-footer"><span class="status-indicator"></span> Sistema conectado</div>
+        </aside>
+        <div class="app-main">
+          <header class="app-topbar">
+            <div class="app-page-heading">
+              <p class="eyebrow" id="page-kicker">GESTAO DA CORRIDA</p>
+              <h2 id="page-title">Inscricoes</h2>
+              <p id="page-description">Acompanhe os participantes e pagamentos da edicao.</p>
+            </div>
+            <div class="workspace-bar">
+              <p id="admin-role" class="role-badge"></p>
+              <button id="logout-button" class="secondary" type="button">Sair</button>
+            </div>
+          </header>
+          <p id="management-message" class="message global-message" role="status" aria-live="polite"></p>
+          <div class="app-content" id="app-content">
       <section class="admin-view card" data-view-panel="registrations">
         <div class="section-heading">
           <div><p class="eyebrow">PARTICIPANTES</p><h2>Inscricoes</h2></div>
           <button id="export-csv" type="button" class="secondary" hidden>Exportar CSV</button>
         </div>
+        <div class="local-tabs" role="tablist" aria-label="Abas de inscricoes">
+          <button id="registrations-list-tab" type="button" role="tab" aria-selected="true" aria-controls="registrations-list-panel">Visualizacao</button>
+          <button id="registrations-chart-tab" type="button" role="tab" aria-selected="false" aria-controls="registrations-chart-panel">Picos de inscricao</button>
+        </div>
+        <section id="registrations-list-panel" role="tabpanel" aria-labelledby="registrations-list-tab">
         <section class="summary-block" aria-label="Resumo da edicao">
           <h3>Resumo da edicao</h3>
           <p id="report-summary" class="muted">Selecione uma edicao para ver os totais.</p>
@@ -79,55 +103,151 @@
           <span id="page-label">Pagina 1</span>
           <button id="next-page" class="secondary">Proxima</button>
         </div>
+        </section>
+        <section id="registrations-chart-panel" role="tabpanel" aria-labelledby="registrations-chart-tab" hidden>
+          <div class="chart-toolbar">
+            <p class="muted">Quantidade de inscricoes realizadas ao longo do tempo para a edicao selecionada.</p>
+            <label>Intervalo
+              <select id="activity-granularity">
+                <option value="day">Diario</option>
+                <option value="month">Mensal</option>
+                <option value="year">Anual</option>
+              </select>
+            </label>
+          </div>
+          <p id="activity-chart-message" class="message" role="status" aria-live="polite">Selecione uma edicao para visualizar o grafico.</p>
+          <div id="activity-chart" class="activity-chart" role="img" aria-label="Grafico de inscricoes por periodo"></div>
+        </section>
       </section>
       <section class="admin-view card" data-view-panel="editions" hidden>
         <div class="section-heading"><div><p class="eyebrow">TEMPORADAS</p><h2>Edicoes</h2></div></div>
-        <form id="edition-form" class="form-grid">
-          <label>Edicao para editar<select id="managed-edition"><option value="">Nova edicao</option></select></label>
-          <label>Ano<input name="year" type="number" min="2000" max="2200" required></label>
-          <label>Nome<input name="name" maxlength="120" required></label>
-          <label>Status<select name="status"><option value="draft">Rascunho</option><option value="open">Inscricoes abertas</option><option value="closed">Inscricoes encerradas</option><option value="archived">Arquivada</option></select></label>
-          <button type="submit" id="save-edition">Criar edicao</button>
-        </form>
-        <form id="payment-instructions-form" class="inline-form">
-          <label>Instrucoes de pagamento Pix
-            <textarea name="pixInstructions" rows="4" maxlength="2000" placeholder="Chave Pix, titular e orientacoes para o participante"></textarea>
-          </label>
-          <button type="submit" class="secondary">Salvar instrucoes Pix</button>
-        </form>
-        <form id="clone-form" class="inline-form form-grid">
-          <h3 class="grid-span">Iniciar nova edicao copiando configuracoes</h3>
-          <label>Novo ano<input name="year" type="number" min="2000" max="2200" required></label>
-          <label>Nome<input name="name" maxlength="120" required></label>
-          <button type="submit" class="secondary">Duplicar sem participantes</button>
-        </form>
+        <div class="local-tabs" role="tablist" aria-label="Abas de edicoes">
+          <button id="edition-create-tab" type="button" role="tab" aria-selected="true" aria-controls="edition-create-panel">Cadastro</button>
+          <button id="edition-view-tab" type="button" role="tab" aria-selected="false" aria-controls="edition-view-panel">Visualizacao</button>
+        </div>
+        <section id="edition-create-panel" role="tabpanel" aria-labelledby="edition-create-tab">
+          <section class="management-section">
+            <h3>Criar edicao</h3>
+            <form id="edition-create-form" class="form-grid">
+              <label>Ano<input name="year" type="number" min="2000" max="2200" required></label>
+              <label>Nome<input name="name" maxlength="120" required></label>
+              <fieldset class="category-availability-fieldset grid-span">
+                <legend>Categorias desta edicao</legend>
+                <div id="edition-create-category-options" class="category-availability-options"></div>
+              </fieldset>
+              <button type="submit">Criar edicao como rascunho</button>
+            </form>
+          </section>
+        </section>
+        <section id="edition-view-panel" role="tabpanel" aria-labelledby="edition-view-tab" hidden>
+          <section class="management-section">
+            <h3>Edicoes cadastradas</h3>
+            <input id="managed-edition" type="hidden">
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Edicao</th><th>Ano</th><th>Status</th><th>Acao</th></tr></thead>
+                <tbody id="editions-list"></tbody>
+              </table>
+            </div>
+            <div class="toolbar pager">
+              <button id="editions-previous-page" type="button" class="secondary">Anterior</button>
+              <span id="editions-page-label">Pagina 1 de 1</span>
+              <button id="editions-next-page" type="button" class="secondary">Proxima</button>
+            </div>
+          </section>
+          <section id="edition-settings" class="management-section" hidden>
+            <h3>Editar edicao</h3>
+            <form id="edition-edit-form" class="form-grid">
+              <label>Ano<input name="year" type="number" min="2000" max="2200" required></label>
+              <label>Nome<input name="name" maxlength="120" required></label>
+              <label>Status<select name="status"><option value="draft">Rascunho</option><option value="open">Inscricoes abertas</option><option value="closed">Inscricoes encerradas</option><option value="archived">Arquivada</option></select></label>
+              <fieldset class="category-availability-fieldset grid-span">
+                <legend>Categorias disponiveis nesta edicao</legend>
+                <p class="muted">Marque as categorias gerais cadastradas que devem aparecer na inscricao publica.</p>
+                <div id="edition-edit-category-options" class="category-availability-options"></div>
+              </fieldset>
+              <button type="submit">Salvar alteracoes da edicao</button>
+            </form>
+            <form id="shirt-settings-form" class="inline-form form-grid">
+              <h3 class="grid-span">Opcao de camisa na inscricao</h3>
+              <label class="checkbox grid-span"><input name="distributeShirt" type="checkbox"> Esta edicao vai distribuir camisa</label>
+              <fieldset class="shirt-options-fieldset grid-span">
+                <legend>Tamanhos disponiveis para os participantes</legend>
+                <div class="shirt-size-options">
+                  <label class="checkbox"><input name="shirtOptions" type="checkbox" value="PP"> PP</label>
+                  <label class="checkbox"><input name="shirtOptions" type="checkbox" value="P"> P</label>
+                  <label class="checkbox"><input name="shirtOptions" type="checkbox" value="M"> M</label>
+                  <label class="checkbox"><input name="shirtOptions" type="checkbox" value="G"> G</label>
+                  <label class="checkbox"><input name="shirtOptions" type="checkbox" value="GG"> GG</label>
+                  <label class="checkbox"><input name="shirtOptions" type="checkbox" value="XG"> XG</label>
+                </div>
+              </fieldset>
+              <button type="submit">Salvar opcoes de camisa</button>
+            </form>
+            <form id="payment-instructions-form" class="inline-form">
+              <label>Instrucoes de pagamento Pix
+                <textarea name="pixInstructions" rows="4" maxlength="2000" placeholder="Chave Pix, titular e orientacoes para o participante"></textarea>
+              </label>
+              <button type="submit" class="secondary">Salvar instrucoes Pix</button>
+            </form>
+          </section>
+        </section>
       </section>
       <section class="admin-view card" data-view-panel="categories" hidden>
-        <div class="section-heading"><div><p class="eyebrow">PROVAS E VAGAS</p><h2>Categorias da edicao</h2></div></div>
-        <p class="muted">As categorias e seus totais ficam na lista de inscricoes. Configure aqui as regras das categorias da edicao selecionada.</p>
-        <form id="category-form" class="form-grid">
-          <label>Categoria para editar<select name="categoryToEdit" id="category-editor-select"><option value="">Nova categoria</option></select></label>
-          <label>Nome<input name="name" maxlength="100" required></label>
-          <label>Distancia em km<input name="distance" type="number" min="0.01" step="0.01" required></label>
-          <label>Idade minima<input name="minAge" type="number" min="0" max="120"></label>
-          <label>Idade maxima<input name="maxAge" type="number" min="0" max="120"></label>
-          <label>Regra de sexo<select name="genderRule"><option value="any">Masculino ou feminino</option><option value="female">Feminino</option><option value="male">Masculino</option></select></label>
-          <label>Valor em reais<input name="price" type="number" min="0" step="0.01" required></label>
-          <label>Limite de vagas<input name="capacity" type="number" min="1"></label>
-          <label>Status<select name="active"><option value="true">Ativa</option><option value="false">Inativa</option></select></label>
-          <button type="submit" id="save-category">Adicionar categoria</button>
-        </form>
-        <form id="shirt-settings-form" class="inline-form form-grid">
-          <h3 class="grid-span">Opcao de camisa na inscricao</h3>
-          <label class="checkbox grid-span"><input name="distributeShirt" type="checkbox"> Esta edicao vai distribuir camisa</label>
-          <label class="grid-span">Tamanhos disponiveis
-            <select name="shirtOptions" multiple size="4" aria-label="Tamanhos de camisa disponiveis">
-              <option value="PP">PP</option><option value="P">P</option><option value="M">M</option>
-              <option value="G">G</option><option value="GG">GG</option><option value="XG">XG</option>
-            </select>
-          </label>
-          <button type="submit">Salvar opcoes de camisa</button>
-        </form>
+        <div class="section-heading"><div><p class="eyebrow">PROVAS E VAGAS</p><h2>Categorias</h2></div></div>
+        <p class="muted">Cadastre categorias gerais uma unica vez. Depois, escolha quais entram em cada edicao. Precos e vagas podem variar por edicao e sao ajustados aqui.</p>
+        <div class="local-tabs" role="tablist" aria-label="Abas de categorias">
+          <button id="category-create-tab" type="button" role="tab" aria-selected="true" aria-controls="category-create-panel">Cadastro</button>
+          <button id="category-view-tab" type="button" role="tab" aria-selected="false" aria-controls="category-view-panel">Visualizacao</button>
+        </div>
+        <section id="category-create-panel" role="tabpanel" aria-labelledby="category-create-tab">
+          <section class="management-section">
+            <h3>Criar categoria</h3>
+            <form id="category-form" class="form-grid">
+              <label>Nome<input name="name" maxlength="100" required></label>
+              <label>Distancia em km<input name="distance" type="number" min="0.01" step="0.01" required></label>
+              <label>Idade minima<input name="minAge" type="number" min="0" max="120"></label>
+              <label>Idade maxima<input name="maxAge" type="number" min="0" max="120"></label>
+              <label>Regra de sexo<select name="genderRule"><option value="any">Masculino ou feminino</option><option value="female">Feminino</option><option value="male">Masculino</option></select></label>
+              <button type="submit" id="save-category">Adicionar categoria</button>
+              <button type="button" id="cancel-category-edit" class="secondary" hidden>Cancelar edicao</button>
+            </form>
+          </section>
+        </section>
+        <section id="category-view-panel" role="tabpanel" aria-labelledby="category-view-tab" hidden>
+          <section class="management-section">
+            <h3>Catalogo geral de categorias</h3>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Categoria</th><th>Distancia</th><th>Faixa etaria</th><th>Regra de sexo</th></tr></thead>
+                <tbody id="categories-list"></tbody>
+              </table>
+            </div>
+            <div class="toolbar pager">
+              <button id="categories-previous-page" type="button" class="secondary">Anterior</button>
+              <span id="categories-page-label">Pagina 1 de 1</span>
+              <button id="categories-next-page" type="button" class="secondary">Proxima</button>
+            </div>
+          </section>
+          <section class="management-section">
+            <h3>Precos e vagas por edicao</h3>
+            <p class="muted">Categorias novas comecam com valor R$ 0,00 e sem limite de vagas. Ajuste esses valores antes de abrir as inscricoes.</p>
+            <label class="category-edition-picker">Edicao
+              <select id="category-edition-select"><option value="">Selecione uma edicao</option></select>
+            </label>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Categoria</th><th>Valor em reais</th><th>Limite de vagas</th><th>Acao</th></tr></thead>
+                <tbody id="edition-category-prices"></tbody>
+              </table>
+            </div>
+            <div class="toolbar pager">
+              <button id="category-prices-previous-page" type="button" class="secondary">Anterior</button>
+              <span id="category-prices-page-label">Pagina 1 de 1</span>
+              <button id="category-prices-next-page" type="button" class="secondary">Proxima</button>
+            </div>
+          </section>
+        </section>
       </section>
       <section class="admin-view card" data-view-panel="settings" hidden>
         <div class="section-heading"><div><p class="eyebrow">INFORMACOES AO PARTICIPANTE</p><h2>Comunicacao</h2></div></div>
@@ -147,19 +267,28 @@
         <p class="muted">O convite cria um acesso secundario. A pessoa define a propria senha pelo link enviado ao e-mail; nunca envie senhas por e-mail.</p>
         <p id="admins-description" class="muted"></p>
         <div class="table-wrap"><table><thead><tr><th>Conta</th><th>Papel</th><th>Vinculo principal</th><th>Ativa</th><th>Acao</th></tr></thead><tbody id="admins"></tbody></table></div>
+        <div class="toolbar pager">
+          <button id="admins-previous-page" type="button" class="secondary">Anterior</button>
+          <span id="admins-page-label">Pagina 1 de 1</span>
+          <button id="admins-next-page" type="button" class="secondary">Proxima</button>
+        </div>
       </section>
       <section class="admin-view card" data-view-panel="appearance" hidden>
         <div class="section-heading"><div><p class="eyebrow">IDENTIDADE ARAME RUN</p><h2>Aparencia</h2></div></div>
-        <p class="muted">A cor escolhida e compartilhada com todos os visitantes. Somente DEV e a administradora principal podem altera-la.</p>
-        <form id="theme-form">
-          <label>Tema global<select name="theme"><option value="arame">Arame — vermelho e laranja</option><option value="ember">Brasa — vermelho intenso</option><option value="sunset">Entardecer — laranja e dourado</option></select></label>
-          <button type="submit">Aplicar tema para todos</button>
-        </form>
+        <p class="muted">A identidade visual e fixa para todos: preto, cinza em vidro translucido e botoes laranja. A paleta nao pode ser alterada pelo painel.</p>
+        <div class="theme-preview" aria-label="Paleta visual fixa">
+          <span><i class="theme-swatch swatch-black"></i>Vidro preto</span>
+          <span><i class="theme-swatch swatch-gray"></i>Vidro cinza</span>
+          <span><i class="theme-swatch swatch-orange"></i>Laranja</span>
+        </div>
       </section>
       <div id="rotated-link" class="card" hidden>
         <p>Link renovado. O anterior deixou de funcionar. Copie e compartilhe este link com o participante:</p>
         <input id="new-status-link" readonly aria-label="Novo link privado de consulta">
         <button type="button" id="copy-status-link" class="secondary">Copiar link</button>
+      </div>
+          </div>
+        </div>
       </div>
     </section>
   </main>

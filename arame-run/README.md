@@ -52,10 +52,23 @@ um banco que ja tenha dados. Nao rode `seed.sql` no projeto remoto.
    execute em consultas separadas e nesta ordem os arquivos
    `202610150001_core.sql`, `202610150002_admin_operations.sql`,
    `202610150003_admin_and_abuse_controls.sql`,
-   `202610150004_developer_roles_themes_gender.sql` e
-   `202610150005_private_registration_links.sql` e
+   `202610150004_developer_roles_themes_gender.sql`,
+   `202610150005_private_registration_links.sql`,
    `202610150006_registration_admin_refinements.sql`. Se as cinco primeiras ja
    foram executadas, execute somente a sexta; nao repita migrations antigas.
+   A migration `202610150007_permanent_edition_deletion.sql` adiciona a exclusao
+   permanente e deve ser executada uma vez, depois da migration 006.
+   A migration `202610150008_registration_activity_chart.sql` adiciona a
+   consulta agregada para o grafico de inscricoes; execute-a uma vez depois da
+   migration 007. Ela retorna apenas periodos e totais, permite agrupamento
+   diario, mensal ou anual e libera a consulta somente a contas administrativas.
+   A migration `202610150009_edition_category_availability.sql` adiciona o
+   salvamento seguro das categorias disponiveis por edicao. Se as migrations
+   anteriores ja foram executadas, crie uma nova consulta e rode somente a 009.
+   A migration `202610150010_global_category_catalog.sql` cria o catalogo geral
+   e associa as categorias existentes sem apagar inscritos ou precos. Execute-a
+   uma vez depois da 009; ela e necessaria para criar edicoes selecionando
+   categorias do catalogo.
    A quarta migration converte o perfil principal ja existente em DEV e impede
    a selecao de inscricoes com genero diferente de masculino/feminino. Se
    existirem inscricoes com outros valores de genero, a migration para sem
@@ -67,6 +80,10 @@ um banco que ja tenha dados. Nao rode `seed.sql` no projeto remoto.
 5. Nenhum projeto ou banco sera alterado pelo repositorio ate voce executar
    essas acoes no painel. A aplicacao local ainda nao tera inscricoes/edicoes
    apenas por salvar `.env`; veja os proximos passos de teste abaixo.
+   Manter o mesmo `SUPABASE_URL` e a chave publica no `.env` mantem o site local
+   conectado ao mesmo projeto Supabase apos alteracoes no codigo. Uma mudanca
+   exclusiva no frontend nao exige reconfigurar o Supabase. Mudancas no esquema
+   do banco exigem aplicar a nova migration no projeto correspondente.
 
 ## 3. Proximos passos para testar uma inscricao ficticia e aprova-la
 
@@ -108,7 +125,10 @@ Depois que as migrations terminarem sem erro:
    nao pode ser recuperado; use **Gerar novo link** somente quando quiser
    invalidar o link antigo e substitui-lo.
 7. Depois do deploy, acesse `http://localhost:4173/admin.html`, entre com a
-   conta principal e crie uma edicao de teste e uma categoria com vagas. Abra
+   conta principal e crie uma edicao claramente identificada como teste e uma
+   categoria com vagas. Nao abra uma edicao real para testar. Altere o status
+   da edicao de teste para "Inscricoes abertas" somente enquanto testar, depois
+   feche-a. Abra
    `http://localhost:4173`, preencha o formulario com dados inteiramente
    ficticios e conclua a inscricao. Guarde o numero/link ficticio mostrado.
 8. No painel, localize essa inscricao, confira categoria e valor e use
@@ -119,6 +139,15 @@ Depois que as migrations terminarem sem erro:
    pode criar a edicao e categoria pelo painel. O formulario publico, consulta
    privada, convites e rotacao de links nao estarao funcionais ate as funcoes
    necessarias estarem implantadas e configuradas.
+
+10. Para remover uma edicao de teste, primeiro feche-a e salve. Em **Edicoes**,
+    selecione-a, digite exatamente seu nome e confirme a exclusao. Isso apaga
+    permanentemente inscritos, registros de pagamento, auditorias, links
+    privados, categorias e configuracoes. Uma ficha minima sem dados pessoais
+    preserva o ano e a numeracao final para impedir reutilizacao. A exclusao
+    pode reduzir dados armazenados, mas nao garante
+    evitar todos os limites do plano gratuito nem libera imediatamente espaco
+    fisico do banco.
 
 O papel DEV continua tecnicamente poderoso e deve permanecer apenas com quem
 mantem o sistema. Ele nao aparece na lista de contas da cliente. A propriedade
@@ -145,6 +174,19 @@ alteracao remota dependem de voce.
 - A migration `202610150006_registration_admin_refinements.sql` adiciona a
   busca e ordenacao administrativa compacta, a configuracao de camisas por
   edicao e a duplicacao dessas preferencias sem dados pessoais.
+- A migration `202610150008_registration_activity_chart.sql` habilita a aba de
+  picos de inscricao do painel. O grafico consulta apenas contagens agrupadas
+  por periodo (fuso horario de Sao Paulo), sem carregar nomes ou outros dados
+  pessoais; a aba oferece visoes diaria, mensal e anual.
+- A migration `202610150009_edition_category_availability.sql` permite marcar,
+  quais categorias ficam disponiveis na inscricao publica.
+- A migration `202610150010_global_category_catalog.sql` separa o catalogo
+  geral (nome, distancia e regras) dos valores de cada edicao. As edicoes podem
+  selecionar categorias gerais no cadastro ou na edicao; precos e vagas ficam
+  configurados por edicao na tela Categorias. As categorias existentes sao
+  preservadas e associadas ao catalogo durante a migration. O envio do
+  formulario exige os dados e selecoes obrigatorios; tamanho de camisa so e
+  exigido quando habilitado para a edicao.
 - `supabase/seed.sql` contem apenas dados ficticios de desenvolvimento. Nao
   rode seeds em um projeto que contenha dados reais.
 - `supabase/tests/database/` contem testes pgTAP de esquema e autorizacao.
@@ -193,9 +235,10 @@ Antes do evento:
 
 ## Estado e limitacoes
 
-O frontend agora tem identidade visual Arame RUN em vidro/translucido,
-modulos de administracao separados, selecao de tema compartilhado e somente
-opcoes masculino/feminino no cadastro. A migration 004 prepara o papel DEV
+O frontend agora tem identidade visual fixa em preto e laranja, com superficies
+pretas/cinzas translucidas; nao ha seletor de tema no painel. O frontend nao
+consulta nem altera a antiga configuracao de temas no banco. Ha modulos de
+administracao separados e somente opcoes masculino/feminino no cadastro. A migration 004 prepara o papel DEV
 oculto dos administradores da corrida e permite que somente DEV escolha a
 administradora principal. O convite cria acesso secundario e a pessoa convidada
 define a propria senha pelo link de Auth. A UI e a migration foram preparadas,
@@ -205,11 +248,35 @@ carga ainda nao foram validados. A integracao deste projeto com uma conta ou
 publicacao remota nao foi realizada pelo agente, e a aplicacao nao esta pronta
 para producao.
 
+O painel administrativo usa navegacao de aplicativo com menu lateral no
+computador, barra de modulos rolavel no celular, cabecalho contextual,
+transicoes curtas e rotas por hash para permitir voltar entre modulos. As telas
+**Edicoes** e **Categorias** separam cadastro e visualizacao em abas. As tabelas
+de edicoes, categorias, administradores e inscricoes exibem no maximo 20 linhas
+por pagina, com paginacao no banco para as listas de edicoes, categorias e
+administradores.
+As edicoes aparecem em ordem de criacao, sem seletor na lista; use **Editar**
+ou **Excluir** na propria linha. O formulario de edicao da temporada reune
+nome, ano, status e as caixas das categorias gerais disponiveis. Na tela
+Categorias, use **Cadastro** para incluir uma definicao geral e
+**Visualizacao** para encontrar **Editar**/**Excluir** junto ao nome. A mesma
+aba permite configurar preco e vagas das categorias selecionadas para cada
+edicao. Categorias novas ficam indisponiveis na inscricao ate serem marcadas
+na criacao ou edicao da temporada. A
+criacao nao duplica configuracoes de outra
+edicao. A exclusao exige que a edicao esteja fechada, digitacao exata do nome
+e confirmacao adicional. Uma categoria vinculada a
+inscricoes nao pode ser excluida por causa das restricoes do banco; nesse caso,
+desmarque-a nas categorias disponiveis da edicao. A exclusao permanente de uma edicao requer a migration
+007 e remove inscricoes, pagamentos, auditorias, links e categorias. Um registro minimo
+retira dados pessoais, mas conserva ano e ultimo numero para nao reutilizar a
+numeracao. Use a exclusao apenas em edicoes de teste: a operacao nao pode ser
+desfeita.
+
 No painel, a lista de inscricoes tem busca por nome, numero ou categoria,
 filtros de pagamento/status e ordenacao pelos cabecalhos; em telas estreitas,
 a tabela rola horizontalmente para preservar as colunas. A tela Comunicacao
 mantem somente a edicao e o WhatsApp oficial. As instrucoes Pix ficam na
-configuracao da edicao, e as categorias podem ser selecionadas para edicao sem
-uma tabela separada. As cores e os formularios foram conferidos em viewport
+configuracao da edicao. As cores e os formularios foram conferidos em viewport
 movel de 390 px; isso valida o layout basico, mas nao substitui testes em
 aparelhos, navegadores e condicoes de rede reais.

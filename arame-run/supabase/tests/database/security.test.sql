@@ -1,7 +1,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = public, extensions;
-select plan(64);
+select plan(104);
 
 insert into auth.users (
   id, aud, role, email, encrypted_password, email_confirmed_at,
@@ -49,6 +49,12 @@ select has_table('public', 'payment_audit', 'payment audit table exists');
 select has_table('public', 'admin_role_audit', 'administrator role changes are audited');
 select has_table('public', 'app_theme_settings', 'shared theme settings exist');
 select has_table('public', 'registration_private_links', 'encrypted private registration links are stored');
+select has_table('public', 'deleted_edition_years',
+  'permanently deleted edition years remain blocked from reuse');
+select has_table('public', 'category_catalog',
+  'categories are maintained in a general catalog');
+select has_column('public', 'categories', 'catalog_category_id',
+  'edition categories link to their general catalog definition');
 select has_column('public', 'edition_public_settings', 'distribute_shirt',
   'shirt distribution is configured per edition');
 select has_column('public', 'edition_public_settings', 'shirt_options',
@@ -59,6 +65,30 @@ select has_function('public', 'admin_registration_page',
 select has_function('public', 'set_edition_shirt_options',
   ARRAY['uuid', 'boolean', 'text[]'],
   'shirt distribution is changed through a guarded operation');
+select has_function('public', 'delete_edition_and_registrations',
+  ARRAY['uuid', 'text'],
+  'permanent edition deletion is performed by a guarded RPC');
+select has_function('public', 'admin_registration_activity',
+  ARRAY['uuid', 'text'],
+  'registration activity is returned through an aggregated RPC');
+select has_function('public', 'sync_edition_categories',
+  ARRAY['uuid', 'uuid[]'],
+  'editions select their categories through a guarded RPC');
+select has_function('public', 'create_edition_with_categories',
+  ARRAY['integer', 'text', 'uuid[]'],
+  'new editions and selected categories are created atomically');
+select has_function('public', 'update_edition_with_categories',
+  ARRAY['uuid', 'integer', 'text', 'text', 'uuid[]'],
+  'edition details and selected categories are updated atomically');
+select hasnt_function('public', 'clone_edition',
+  ARRAY['uuid', 'integer', 'text'],
+  'edition cloning is no longer available');
+select has_function('public', 'update_category_catalog',
+  ARRAY['uuid', 'text', 'numeric', 'integer', 'integer', 'text'],
+  'general category definitions are edited through a guarded RPC');
+select has_function('public', 'delete_category_catalog',
+  ARRAY['uuid'],
+  'general categories are deleted through a guarded RPC');
 select ok((select relrowsecurity from pg_class where oid = 'public.registrations'::regclass),
   'registrations has RLS enabled');
 select ok((select relrowsecurity from pg_class where oid = 'public.payment_audit'::regclass),
@@ -79,6 +109,50 @@ select ok(not has_function_privilege('anon',
 select ok(has_function_privilege('authenticated',
   'public.admin_registration_page(uuid,text,text,text,text,boolean,integer,integer)', 'EXECUTE'),
   'authenticated admins can use the filtered registration list');
+select ok(not has_function_privilege('anon',
+  'public.admin_registration_activity(uuid,text)', 'EXECUTE'),
+  'anonymous users cannot query registration activity');
+select ok(has_function_privilege('authenticated',
+  'public.admin_registration_activity(uuid,text)', 'EXECUTE'),
+  'authenticated admins can query aggregated registration activity');
+select ok(not has_function_privilege('anon',
+  'public.sync_edition_categories(uuid,uuid[])', 'EXECUTE'),
+  'anonymous users cannot change categories assigned to an edition');
+select ok(has_function_privilege('authenticated',
+  'public.sync_edition_categories(uuid,uuid[])', 'EXECUTE'),
+  'authenticated administrators can assign catalog categories to editions');
+select ok(not has_function_privilege('anon',
+  'public.create_edition_with_categories(integer,text,uuid[])', 'EXECUTE'),
+  'anonymous users cannot create editions with categories');
+select ok(has_function_privilege('authenticated',
+  'public.create_edition_with_categories(integer,text,uuid[])', 'EXECUTE'),
+  'authenticated administrators can create editions with categories');
+select ok(not has_function_privilege('anon',
+  'public.update_edition_with_categories(uuid,integer,text,text,uuid[])', 'EXECUTE'),
+  'anonymous users cannot change edition details or categories');
+select ok(has_function_privilege('authenticated',
+  'public.update_edition_with_categories(uuid,integer,text,text,uuid[])', 'EXECUTE'),
+  'authenticated administrators can change edition details and categories');
+select ok(not has_function_privilege('anon',
+  'public.update_category_catalog(uuid,text,numeric,integer,integer,text)', 'EXECUTE'),
+  'anonymous users cannot edit general category definitions');
+select ok(has_function_privilege('authenticated',
+  'public.update_category_catalog(uuid,text,numeric,integer,integer,text)', 'EXECUTE'),
+  'authenticated administrators can edit general category definitions');
+select ok(not has_function_privilege('anon',
+  'public.delete_category_catalog(uuid)', 'EXECUTE'),
+  'anonymous users cannot delete general categories');
+select ok(has_function_privilege('authenticated',
+  'public.delete_category_catalog(uuid)', 'EXECUTE'),
+  'authenticated administrators can request guarded general category deletion');
+select ok(not has_function_privilege('anon',
+  'public.delete_edition_and_registrations(uuid,text)', 'EXECUTE'),
+  'anonymous clients cannot delete editions');
+select ok(has_function_privilege('authenticated',
+  'public.delete_edition_and_registrations(uuid,text)', 'EXECUTE'),
+  'authenticated admins can request guarded edition deletion');
+select ok(not has_table_privilege('authenticated', 'public.deleted_edition_years', 'SELECT'),
+  'admins cannot read the retired-edition ledger directly');
 select ok(not has_function_privilege('anon',
   'public.create_registration(uuid,uuid,text,text,date,text,text,text)', 'EXECUTE'),
   'anonymous clients cannot execute registration RPC directly');
@@ -104,6 +178,10 @@ select ok(has_table_privilege('authenticated', 'public.registrations', 'SELECT')
   'authenticated access is mediated by registration RLS');
 select ok(not has_table_privilege('anon', 'public.registrations', 'SELECT'),
   'anonymous clients have no registration table access');
+select ok(not has_table_privilege('authenticated', 'public.category_catalog', 'UPDATE'),
+  'catalog definitions cannot bypass the guarded update RPC');
+select ok(not has_table_privilege('authenticated', 'public.category_catalog', 'DELETE'),
+  'catalog definitions cannot bypass the guarded delete RPC');
 select is((select count(*)::integer from public.registrations where gender not in ('female', 'male')),
   0, 'stored registration gender choices are limited to female and male');
 
@@ -160,11 +238,18 @@ select throws_ok(
   'secondary administrator cannot create editions'
 );
 select throws_ok(
-  $$select public.clone_edition(
-    '26000000-0000-4000-8000-000000000026', 2030, 'Arame RUN 2030 (TESTE)'
+  $$select public.delete_edition_and_registrations(
+    '26000000-0000-4000-8000-000000000026', 'Arame RUN 2026 (TESTE)'
   )$$,
   '42501', 'Primary administrator required',
-  'secondary administrator cannot clone edition settings'
+  'secondary administrator cannot delete an edition'
+);
+select throws_ok(
+  $$select public.create_edition_with_categories(
+    2030, 'Arame RUN 2030 (TESTE)', ARRAY[]::uuid[]
+  )$$,
+  '42501', 'Primary administrator required',
+  'secondary administrator cannot create an edition with categories'
 );
 select throws_ok(
   $$select public.rotate_registration_lookup_token_with_ciphertext(
@@ -237,10 +322,34 @@ select is((select count(*)::integer from public.lookup_registration(
   encode(extensions.digest('fake-token-alpha', 'sha256'), 'hex')
 )), 0, 'the previous private link is invalidated');
 select lives_ok(
-  $$select public.clone_edition(
-    '26000000-0000-4000-8000-000000000026', 2028, 'Arame RUN 2028 (TESTE)'
+  $$select public.create_edition_with_categories(
+    2028, 'Arame RUN 2028 (TESTE)',
+    ARRAY(
+      SELECT catalog_category_id
+      FROM public.categories
+      WHERE edition_id = '26000000-0000-4000-8000-000000000026'
+      ORDER BY catalog_category_id
+    )
   )$$,
-  'primary can duplicate an edition configuration'
+  'primary can create an edition with selected catalog categories'
+);
+select lives_ok(
+  $$select public.update_edition_with_categories(
+    (select id from public.editions where year = 2028),
+    2028,
+    'Arame RUN 2028 (TESTE)',
+    'open',
+    ARRAY[
+      (
+        SELECT catalog_category_id
+        FROM public.categories
+        WHERE edition_id = '26000000-0000-4000-8000-000000000026'
+        ORDER BY catalog_category_id
+        LIMIT 1
+      )
+    ]
+  )$$,
+  'primary can update edition details and category selection atomically'
 );
 select throws_ok(
   $$update public.categories set capacity = 1
@@ -256,16 +365,93 @@ select throws_ok(
 );
 reset role;
 select is((select count(*)::integer from public.editions where year = 2028),
-  1, 'cloned edition is created as a separate year');
+  1, 'new edition is created as a separate year');
 select is((select count(*)::integer from public.categories c
   join public.editions e on e.id = c.edition_id where e.year = 2028),
-  2, 'edition clone copies categories');
+  (select count(*)::integer from public.categories
+    where edition_id = '26000000-0000-4000-8000-000000000026'),
+  'new edition receives only the categories selected from the catalog');
+select is((select count(*)::integer from public.categories c
+  join public.editions e on e.id = c.edition_id where e.year = 2028 and c.is_active),
+  1, 'updating an edition keeps only its selected category active');
+select is((select status from public.editions where year = 2028),
+  'open', 'edition status is saved with its category selection');
 select is((select count(*)::integer from public.registrations r
   join public.editions e on e.id = r.edition_id where e.year = 2028),
-  0, 'edition clone does not copy participants');
+  0, 'new editions do not copy participants');
 select is((select last_number::integer from public.edition_counters c
   join public.editions e on e.id = c.edition_id where e.year = 2028),
-  0, 'edition clone starts a new independent number sequence');
+  0, 'new editions start an independent number sequence');
+insert into public.registrations (
+  edition_id, registration_number, full_name, phone_e164, birth_date,
+  gender, category_id, amount_due_cents, shirt_size, payment_status,
+  payment_confirmed_at, lookup_token_hash
+)
+select e.id, 1, 'Teste Ficticio Para Exclusao', '+5511990000099',
+  '1990-01-01', 'female', c.id, 5000, '', 'confirmed', now(),
+  extensions.digest('fake-token-for-deletion-test', 'sha256')
+from public.editions e
+join public.categories c on c.edition_id = e.id
+where e.year = 2028 and c.is_active
+order by c.name
+limit 1;
+insert into public.payment_audit (
+  registration_id, previous_status, new_status, changed_by, note
+)
+select id, 'pending', 'confirmed', '26000000-0000-4000-8000-000000000201',
+  'auditoria ficticia para teste de exclusao'
+from public.registrations where full_name = 'Teste Ficticio Para Exclusao';
+insert into public.registration_private_links (registration_id, token_ciphertext)
+select id, 'v1:' || repeat('a', 24) || ':' || repeat('b', 160)
+from public.registrations where full_name = 'Teste Ficticio Para Exclusao';
+update public.edition_counters
+set last_number = 1
+where edition_id = (select id from public.editions where year = 2028);
+update public.editions set status = 'open' where year = 2028;
+select set_config('request.jwt.claim.sub', '26000000-0000-4000-8000-000000000201', true);
+select set_config('request.jwt.claims',
+  '{"sub":"26000000-0000-4000-8000-000000000201","role":"authenticated"}', true);
+set local role authenticated;
+select throws_ok(
+  $$select public.delete_edition_and_registrations(
+    (select id from public.editions where year = 2028), 'Arame RUN 2028 (TESTE)'
+  )$$,
+  '22023', 'Close the edition before permanent deletion',
+  'open editions cannot be permanently deleted'
+);
+reset role;
+update public.editions set status = 'closed' where year = 2028;
+select set_config('request.jwt.claim.sub', '26000000-0000-4000-8000-000000000201', true);
+select set_config('request.jwt.claims',
+  '{"sub":"26000000-0000-4000-8000-000000000201","role":"authenticated"}', true);
+set local role authenticated;
+select is(public.delete_edition_and_registrations(
+  (select id from public.editions where year = 2028), 'Arame RUN 2028 (TESTE)'
+), 1, 'primary can permanently delete a closed edition and its registration');
+reset role;
+select is((select count(*)::integer from public.editions where year = 2028),
+  0, 'permanent deletion removes the edition');
+select is((select count(*)::integer from public.registrations
+  where full_name = 'Teste Ficticio Para Exclusao'),
+  0, 'permanent deletion removes its registrations');
+select is((select count(*)::integer from public.payment_audit
+  where note = 'auditoria ficticia para teste de exclusao'),
+  0, 'permanent deletion removes payment audit history');
+select is((select count(*)::integer from public.registration_private_links
+  where token_ciphertext = 'v1:' || repeat('a', 24) || ':' || repeat('b', 160)),
+  0, 'permanent deletion removes private registration links');
+select is((select count(*)::integer from public.deleted_edition_years where year = 2028),
+  1, 'permanent deletion retains a minimal year tombstone');
+select set_config('request.jwt.claim.sub', '26000000-0000-4000-8000-000000000201', true);
+select set_config('request.jwt.claims',
+  '{"sub":"26000000-0000-4000-8000-000000000201","role":"authenticated"}', true);
+set local role authenticated;
+select throws_ok(
+  $$select public.create_edition(2028, 'Arame RUN 2028 recriada')$$,
+  '22023', 'Edition year was permanently retired',
+  'a deleted edition year cannot be recreated and reuse registration numbers'
+);
+reset role;
 select is((select payment_status::text from public.registrations
   where id = '26000000-0000-4000-8000-000000000101'),
   'refunded', 'primary correction updates the payment status');

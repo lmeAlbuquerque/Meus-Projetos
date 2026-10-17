@@ -10,6 +10,7 @@ const message = document.querySelector("#form-message");
 let categories = [];
 let shirtDistributionEnabled = false;
 let shirtOptions = [];
+shirtSelect.required = false;
 
 function showMessage(text, isError = false) {
   message.textContent = text;
@@ -74,7 +75,9 @@ categorySelect.addEventListener("change", () => {
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
   const data = Object.fromEntries(new FormData(form));
-  const problems = validateRegistration(data);
+  const problems = validateRegistration(data, {
+    shirtRequired: shirtDistributionEnabled && Boolean(data.categoryId),
+  });
   if (problems.length) return showMessage(problems.join(" "), true);
   const button = form.querySelector("button[type=submit]");
   button.disabled = true;

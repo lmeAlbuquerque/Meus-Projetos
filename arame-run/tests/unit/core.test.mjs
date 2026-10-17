@@ -19,6 +19,11 @@ test("validates the required registration data", () => {
   assert.ok(validateRegistration({ ...validRegistration, birthDate: "invalid" }).length > 0);
   assert.ok(validateRegistration({ ...validRegistration, birthDate: "1990-02-30" }).length > 0);
   assert.ok(validateRegistration({ ...validRegistration, gender: "other" }).length > 0);
+  assert.ok(validateRegistration({ ...validRegistration, editionId: "" }).some((problem) => problem.includes("edicao")));
+  assert.ok(validateRegistration({ ...validRegistration, categoryId: "" }).some((problem) => problem.includes("categoria")));
+  assert.ok(validateRegistration({ ...validRegistration, shirtSize: "" }, { shirtRequired: true })
+    .some((problem) => problem.includes("camisa")));
+  assert.deepEqual(validateRegistration({ ...validRegistration, shirtSize: "" }), []);
 });
 
 test("encodes WhatsApp text and rejects invalid numbers", () => {

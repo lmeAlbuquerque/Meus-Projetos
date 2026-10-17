@@ -8,7 +8,7 @@ function config() {
   return value;
 }
 
-async function request(path, { method = "GET", body, token, headers = {} } = {}) {
+async function request(path, { method = "GET", body, token, headers = {}, includeHeaders = false } = {}) {
   const settings = config();
   const response = await fetch(`${settings.supabaseUrl}${path}`, {
     method,
@@ -16,12 +16,16 @@ async function request(path, { method = "GET", body, token, headers = {} } = {})
       apikey: settings.supabaseAnonKey,
       Authorization: `Bearer ${token ?? settings.supabaseAnonKey}`,
       ...(body === undefined ? {} : { "Content-Type": "application/json" }),
+      ...(includeHeaders ? { Prefer: "count=exact" } : {}),
       ...headers,
     },
     ...(body === undefined ? {} : { body: JSON.stringify(body) }),
   });
   const payload = response.status === 204 ? null : await response.json().catch(() => null);
   if (!response.ok) throw new Error(payload?.msg ?? payload?.message ?? payload?.error_description ?? payload?.message ?? "Falha ao consultar o servico.");
+  if (includeHeaders) {
+    return { payload, contentRange: response.headers.get("content-range") };
+  }
   return payload;
 }
 
@@ -49,6 +53,18 @@ export async function adminSelect(table, query, token) {
   return request(`/rest/v1/${table}?${new URLSearchParams(query)}`, { token });
 }
 
+export async function adminSelectPage(table, query, token) {
+  const result = await request(`/rest/v1/${table}?${new URLSearchParams(query)}`, {
+    token,
+    includeHeaders: true,
+  });
+  const total = Number(result.contentRange?.split("/")[1]);
+  if (!Number.isFinite(total)) {
+    throw new Error("Nao foi possivel determinar o total de registros para a paginacao.");
+  }
+  return { rows: result.payload, total };
+}
+
 export async function adminRpc(name, body, token) {
   return request(`/rest/v1/rpc/${name}`, { method: "POST", body, token });
 }
@@ -58,7 +74,7 @@ export async function adminWrite(table, query, method, body, token) {
     method,
     body,
     token,
-    headers: { Prefer: "return=representation,resolution=merge-duplicates" },
+    headers: { Prefer: "return=representation" },
   });
 }
 

@@ -5,7 +5,7 @@ export function buildWhatsAppUrl(number, eventName, registrationNumber, particip
   return `https://wa.me/${digits}?text=${encodeURIComponent(message)}`;
 }
 
-export function validateRegistration(data) {
+export function validateRegistration(data, { shirtRequired = false } = {}) {
   const problems = [];
   if (!data.fullName || data.fullName.trim().length < 2 || data.fullName.trim().length > 160) {
     problems.push("Informe o nome completo.");
@@ -21,9 +21,9 @@ export function validateRegistration(data) {
   if (!["female", "male"].includes(data.gender)) {
     problems.push("Selecione uma opcao de sexo.");
   }
-  if (!data.editionId || !data.categoryId || typeof data.shirtSize !== "string") {
-    problems.push("Selecione edicao, categoria e tamanho da camisa.");
-  }
+  if (!data.editionId) problems.push("Selecione uma edicao.");
+  if (!data.categoryId) problems.push("Selecione uma categoria.");
+  if (shirtRequired && !data.shirtSize) problems.push("Selecione um tamanho de camisa.");
   return problems;
 }
 

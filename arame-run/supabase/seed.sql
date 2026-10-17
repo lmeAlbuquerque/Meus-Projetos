@@ -12,15 +12,22 @@ insert into public.edition_public_settings (
   'https://chat.whatsapp.com/fake-test-link'
 );
 
+insert into public.category_catalog (
+  id, name, distance_km, min_age, gender_rule
+) values
+  ('26000000-0000-4000-8000-000000000011', 'Corrida 5 km - teste', 5, 16, 'any'),
+  ('26000000-0000-4000-8000-000000000012', 'Caminhada 3 km - teste', 3, 12, 'any');
+
 insert into public.categories (
-  id, edition_id, name, distance_km, min_age, gender_rule, price_cents, capacity, shirt_options
+  id, edition_id, catalog_category_id, name, distance_km, min_age, gender_rule,
+  price_cents, capacity, shirt_options
 ) values
   ('26000000-0000-4000-8000-000000000001', '26000000-0000-4000-8000-000000000026',
-   'Corrida 5 km - teste', 5, 16, 'any', 5000, 500, array['P', 'M', 'G', 'GG']),
+   '26000000-0000-4000-8000-000000000011', 'Corrida 5 km - teste', 5, 16, 'any', 5000, 500, array['P', 'M', 'G', 'GG']),
   ('26000000-0000-4000-8000-000000000002', '26000000-0000-4000-8000-000000000026',
-   'Caminhada 3 km - teste', 3, 12, 'any', 3000, 500, array['P', 'M', 'G', 'GG']),
+   '26000000-0000-4000-8000-000000000012', 'Caminhada 3 km - teste', 3, 12, 'any', 3000, 500, array['P', 'M', 'G', 'GG']),
   ('27000000-0000-4000-8000-000000000001', '27000000-0000-4000-8000-000000000027',
-   'Corrida 5 km - teste', 5, 16, 'any', 4000, 300, array['P', 'M', 'G', 'GG']);
+   '26000000-0000-4000-8000-000000000011', 'Corrida 5 km - teste', 5, 16, 'any', 4000, 300, array['P', 'M', 'G', 'GG']);
 
 insert into public.edition_counters (edition_id, last_number)
 values ('26000000-0000-4000-8000-000000000026', 2);
